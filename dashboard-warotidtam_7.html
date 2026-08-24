@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บันทึกวาระติดตาม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F1E7;
+    --surface: #FFFEFA;
+    --surface-dim: #EFE9DA;
+    --ink: #1E2A44;
+    --ink-soft: #5B6580;
+    --ink-faint: #94A0B8;
+    --border: #DDD3BC;
+    --border-strong: #C7B99A;
+    --amber: #B4791F;
+    --amber-bg: #F7E8CC;
+    --green: #45705A;
+    --green-bg: #DCE9DF;
+    --red: #A63F2B;
+    --red-bg: #F3DAD1;
+    --blue: #33547A;
+    --blue-bg: #D9E2ED;
+    --purple: #6B4E82;
+    --purple-bg: #E7DEEC;
+    --shadow: 0 2px 10px rgba(30,42,68,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Noto Sans Thai', sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px);
+    background-size: 100% 34px;
+    background-attachment:local;
+  }
+  #app{display:flex; min-height:100vh;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+  .serif{font-family:'Noto Serif Thai', serif;}
+
+  /* Sidebar */
+  .sidebar{
+    width:216px; flex-shrink:0; background:var(--ink); color:#EDE7D8;
+    display:flex; flex-direction:column; padding:22px 0;
+    background-image: repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0 33px, rgba(255,255,255,0.05) 33px 34px);
+  }
+  .brand{padding:0 22px 20px 22px; border-bottom:1px solid rgba(237,231,216,0.15); margin-bottom:14px;}
+  .brand .mark{
+    width:34px;height:34px;border:2px solid #EDE7D8;border-radius:3px;
+    display:flex;align-items:center;justify-content:center; font-family:'Noto Serif Thai',serif; font-weight:700; font-size:15px; margin-bottom:10px;
+    transform:rotate(-3deg);
+  }
+  .brand h1{font-family:'Noto Serif Thai',serif; font-size:18px; font-weight:600; margin:0 0 2px 0; letter-spacing:.2px;}
+  .brand p{font-size:11.5px; color:#B7AF98; margin:0; font-family:'JetBrains Mono',monospace;}
+
+  nav{display:flex; flex-direction:column; padding:6px 12px; gap:2px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:6px;
+    color:#CBC4AF; cursor:pointer; font-size:14.5px; font-weight:500; border:1px solid transparent;
+    transition:background .15s;
+  }
+  .nav-item .num{font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8368; width:16px;}
+  .nav-item:hover{background:rgba(237,231,216,0.06);}
+  .nav-item.active{background:rgba(237,231,216,0.1); color:#F5F1E7; border-color:rgba(237,231,216,0.18);}
+  .nav-item.active .num{color:#D9A94F;}
+
+  .sidebar-foot{margin-top:auto; padding:16px 22px 4px 22px; font-size:11px; color:#8A8368; border-top:1px solid rgba(237,231,216,0.12); font-family:'JetBrains Mono',monospace;}
+
+  /* Main */
+  main{flex:1; padding:28px 34px 60px 34px; max-width:1180px;}
+  .topbar{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:26px; gap:16px; flex-wrap:wrap;}
+  .topbar .date{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--ink-soft); background:var(--surface); border:1px solid var(--border); padding:6px 12px; border-radius:20px;}
+  .page-title{font-family:'Noto Serif Thai',serif; font-size:26px; font-weight:600; margin:0 0 4px 0;}
+  .page-sub{color:var(--ink-soft); font-size:13.5px; margin:0;}
+  .btn{
+    font-family:'Noto Sans Thai',sans-serif; font-size:13.5px; font-weight:600; padding:10px 18px; border-radius:7px;
+    border:1px solid var(--ink); background:var(--ink); color:var(--bg); cursor:pointer; white-space:nowrap;
+  }
+  .btn:hover{opacity:.88;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--border-strong);}
+  .btn.ghost:hover{background:var(--surface-dim);}
+  .btn.small{padding:6px 12px; font-size:12.5px;}
+  .btn.danger{background:var(--red-bg); color:var(--red); border-color:var(--red-bg);}
+  .btn.purple{background:var(--purple); border-color:var(--purple);}
+  .icon-btn{
+    background:transparent; border:1px solid var(--border-strong); border-radius:6px; padding:5px 9px;
+    cursor:pointer; font-size:12px; color:var(--ink-soft); flex-shrink:0;
+  }
+  .icon-btn:hover{background:var(--surface-dim); color:var(--ink);}
+
+  /* Stat cards */
+  .stats{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:26px;}
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 16px 14px 16px;
+    box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .stat-card .n{font-family:'Noto Serif Thai',serif; font-size:30px; font-weight:700; line-height:1;}
+  .stat-card .l{font-size:12px; color:var(--ink-soft); margin-top:6px;}
+  .stat-card::before{content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--ink-faint);}
+  .stat-card.pending::before{background:var(--amber);}
+  .stat-card.progress::before{background:var(--blue);}
+  .stat-card.done::before{background:var(--green);}
+  .stat-card.overdue::before{background:var(--red);}
+
+  /* Card / panel */
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:20px 22px; margin-bottom:20px;}
+  .panel h2{font-family:'Noto Serif Thai',serif; font-size:16.5px; margin:0 0 14px 0; display:flex; align-items:center; gap:8px;}
+  .panel h2 .tag{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-faint); font-weight:400;}
+
+  /* Items list */
+  .item-row{
+    display:flex; align-items:center; gap:10px; padding:13px 4px; border-bottom:1px dashed var(--border);
+  }
+  .item-row:last-child{border-bottom:none;}
+  .item-row:hover{background:var(--surface-dim); border-radius:6px;}
+  .item-row .title{font-weight:600; font-size:14px; flex:1; min-width:0; cursor:pointer;}
+  .item-row .title small{display:block; font-weight:400; color:var(--ink-soft); font-size:12px; margin-top:2px; font-family:'JetBrains Mono',monospace;}
+  .empty{color:var(--ink-faint); font-size:13.5px; padding:14px 4px; font-style:italic;}
+  .hidden-tag{font-size:10.5px; color:var(--ink-faint); background:var(--surface-dim); padding:2px 7px; border-radius:10px; font-family:'JetBrains Mono',monospace;}
+
+  /* Stamp badge */
+  .stamp{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:600; letter-spacing:.06em;
+    padding:4px 10px; border-radius:3px; border:1.5px dashed; text-transform:uppercase; white-space:nowrap;
+    transform:rotate(-2deg); display:inline-block;
+  }
+  .stamp.รอดำเนินการ{color:var(--amber); border-color:var(--amber); background:var(--amber-bg);}
+  .stamp.กำลังดำเนินการ{color:var(--blue); border-color:var(--blue); background:var(--blue-bg);}
+  .stamp.เสร็จสิ้น{color:var(--green); border-color:var(--green); background:var(--green-bg);}
+  .stamp.overdue{color:var(--red); border-color:var(--red); background:var(--red-bg); transform:rotate(2deg);}
+
+  .pri{font-size:11px; font-weight:600; padding:3px 8px; border-radius:12px;}
+  .pri.สูง{color:var(--red); background:var(--red-bg);}
+  .pri.กลาง{color:var(--amber); background:var(--amber-bg);}
+  .pri.ต่ำ{color:var(--ink-soft); background:var(--surface-dim);}
+
+  /* Progress */
+  .progress-wrap{display:flex; align-items:center; gap:7px; width:120px; flex-shrink:0;}
+  .progress-track{flex:1; height:8px; background:var(--surface-dim); border-radius:4px; overflow:hidden;}
+  .progress-fill{height:100%; border-radius:4px; transition:width .2s;}
+  .progress-pct{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); width:34px; text-align:right; flex-shrink:0;}
+  .progress-editor{display:flex; align-items:center; gap:10px;}
+  .progress-editor input[type=range]{width:220px; accent-color:var(--blue);}
+  .progress-editor .progress-pct-big{font-family:'Noto Serif Thai',serif; font-size:20px; font-weight:700; width:56px;}
+
+  /* Forms */
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; margin-top:14px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=url], input[type=date], textarea, select{
+    width:100%; font-family:'Noto Sans Thai',sans-serif; font-size:14px; padding:10px 12px;
+    border:1px solid var(--border-strong); border-radius:7px; background:var(--surface); color:var(--ink);
+  }
+  input:focus, textarea:focus, select:focus{outline:2px solid var(--blue); outline-offset:1px;}
+  textarea{resize:vertical; min-height:70px; font-family:'Noto Sans Thai',sans-serif;}
+  textarea.mono-area{font-family:'JetBrains Mono',monospace; font-size:12.5px; min-height:130px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .form-actions{display:flex; gap:10px; margin-top:20px;}
+
+  /* Detail */
+  .detail-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .meta-row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+  .meta-chip{font-size:12px; color:var(--ink-soft); background:var(--surface-dim); padding:5px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace;}
+  .desc{margin-top:14px; font-size:13.5px; line-height:1.7; color:var(--ink);}
+
+  .log-entry{border:1px solid var(--border); border-left:3px solid var(--blue); border-radius:6px; padding:14px 16px; margin-bottom:12px; background:var(--surface);}
+  .log-entry .log-date{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--ink-soft); margin-bottom:8px;}
+  .log-entry .log-field{font-size:13px; margin-bottom:6px; line-height:1.6;}
+  .log-entry .log-field b{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; display:block; margin-bottom:2px;}
+
+  /* Analysis */
+  .bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .bar-label{width:130px; font-size:12.5px; flex-shrink:0; text-align:right; color:var(--ink-soft);}
+  .bar-track{flex:1; background:var(--surface-dim); border-radius:5px; height:18px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--blue); border-radius:5px;}
+  .bar-count{width:26px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-soft);}
+
+  .insight-box{background:var(--blue-bg); border:1px solid var(--blue); border-radius:8px; padding:14px 16px; font-size:13.5px; line-height:1.7; color:var(--ink);}
+
+  /* Meetings */
+  .meeting-card{border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-bottom:10px; background:var(--surface); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:14px;}
+  .meeting-card:hover{background:var(--surface-dim);}
+  .meeting-card .mt{font-weight:600; font-size:14px;}
+  .meeting-card .ms{font-size:12px; color:var(--ink-soft); margin-top:4px; font-family:'JetBrains Mono',monospace;}
+  .video-badge{display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--purple); background:var(--purple-bg); padding:4px 9px; border-radius:12px; font-weight:600; text-decoration:none; flex-shrink:0;}
+  .video-badge:hover{opacity:.85;}
+
+  .suggestion-card{border:1px solid var(--purple); background:var(--purple-bg); border-radius:8px; padding:12px 14px; margin-bottom:10px;}
+  .suggestion-card .sh{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .suggestion-card .st{font-weight:600; font-size:13.5px; flex:1;}
+  .suggestion-card .sr{font-size:12.5px; color:var(--ink-soft); margin-top:5px; line-height:1.6;}
+  .suggestion-meta{display:flex; gap:8px; margin-top:8px;}
+
+  .spinner{display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Table (report) */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); border-bottom:2px solid var(--ink); padding:8px 8px;}
+  td{padding:10px 8px; border-bottom:1px dashed var(--border); vertical-align:top;}
+  .filters{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px;}
+  .filters .f{min-width:150px;}
+  .filters label{margin-top:0;}
+  .checkline{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-soft); margin-bottom:0;}
+  .checkline input{width:auto;}
+
+  select{appearance:none; background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%235B6580' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:30px;}
+
+  .toast{position:fixed; bottom:22px; right:22px; background:var(--ink); color:var(--bg); padding:12px 18px; border-radius:8px; font-size:13px; box-shadow:0 4px 16px rgba(0,0,0,.2); opacity:0; transform:translateY(8px); transition:all .25s; pointer-events:none; z-index:50; max-width:320px;}
+  .toast.show{opacity:1; transform:translateY(0);}
+
+  @media print{
+    .sidebar, .topbar .btn, .no-print{display:none !important;}
+    main{padding:0; max-width:100%;}
+    body{background:#fff; background-image:none;}
+    .panel{box-shadow:none; border:1px solid #999;}
+  }
+  @media (max-width:900px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%; flex-direction:row; overflow-x:auto; padding:12px;}
+    .brand{display:none;}
+    nav{flex-direction:row;}
+    .sidebar-foot{display:none;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .grid2, .grid3{grid-template-columns:1fr;}
+    main{padding:18px;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'tracker-data-v1';
+const DEPTS = [
+  { name: 'เรื่องแจ้งเพื่อทราบ', subs: [] },
+  { name: 'วาระติดตาม', subs: ['Fiberline 2', 'Pulp Dry', 'RCP'] },
+  { name: 'วาระรายงานผล Production Plan', subs: [] },
+  { name: 'Maintenance', subs: ['Mech', 'Elec', 'Auto'] },
+  { name: 'วาระติดตาม Lab Quality', subs: [] },
+  { name: 'Safety & Environmental', subs: [] },
+  { name: 'HR', subs: [] },
+];
+function getDeptSubs(deptName){ const d = DEPTS.find(d=>d.name===deptName); return d ? d.subs : []; }
+function isValidDept(name){ return DEPTS.some(d=>d.name===name); }
+function deptLabel(it){ return it.subDepartment ? `${it.department} - ${it.subDepartment}` : it.department; }
+function progressColor(p){ if(p>=100) return 'var(--green)'; if(p>=50) return 'var(--blue)'; return 'var(--amber)'; }
+function progressBarHtml(p, small){
+  p = Math.max(0, Math.min(100, p||0));
+  return `<div class="progress-wrap"><div class="progress-track"><div class="progress-fill" style="width:${p}%; background:${progressColor(p)};"></div></div><div class="progress-pct">${p}%</div></div>`;
+}
+let state = { items: [], meetings: [], view: 'dashboard', selectedId: null, formMeetingId: null, showHidden: false };
+let analyzingMeetings = {}; // meetingId -> boolean, transient loading flag only
+
+const $app = document.getElementById('app');
+const $toast = document.getElementById('toast');
+
+function showToast(msg){
+  $toast.textContent = msg;
+  $toast.classList.add('show');
+  clearTimeout(window.__t);
+  window.__t = setTimeout(()=>$toast.classList.remove('show'), 2400);
+}
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDateThai(d){
+  if(!d) return '-';
+  const dt = new Date(d+'T00:00:00');
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()+543}`;
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function isOverdue(item){
+  return item.status !== 'เสร็จสิ้น' && item.dueDate && item.dueDate < todayStr();
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function meetingById(id){ return state.meetings.find(m=>m.id===id); }
+function storageModeLabel(){
+  if(storageMode==='cloud-shared') return '🔗 แชร์ร่วมกันผ่านระบบ Claude';
+  if(storageMode==='local') return '⚠️ บันทึกเฉพาะเบราว์เซอร์นี้ (ไม่แชร์)';
+  return '⚠️ ยังไม่สามารถบันทึกได้';
+}
+
+let storageMode = 'unknown'; // 'cloud-shared' | 'local' | 'none'
+
+function hasCloudStorage(){
+  return typeof window !== 'undefined' && !!window.storage && typeof window.storage.get === 'function';
+}
+async function storageGet(key){
+  if(hasCloudStorage()){
+    try{ const r = await window.storage.get(key, true); storageMode='cloud-shared'; return r; }
+    catch(e){ storageMode='cloud-shared'; return null; }
+  }
+  try{
+    const raw = localStorage.getItem(key);
+    storageMode='local';
+    return raw ? {key, value: raw, shared:false} : null;
+  }catch(e){ storageMode='none'; return null; }
+}
+async function storageSet(key, value){
+  if(hasCloudStorage()){
+    try{ const r = await window.storage.set(key, value, true); storageMode='cloud-shared'; return r; }
+    catch(e){ storageMode='cloud-shared'; return null; }
+  }
+  try{ localStorage.setItem(key, value); storageMode='local'; return {key, value, shared:false}; }
+  catch(e){ storageMode='none'; return null; }
+}
+
+async function load(){
+  try{
+    const res = await storageGet(STORAGE_KEY);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      if(Array.isArray(parsed)){
+        state.items = parsed;
+        state.meetings = [];
+      } else {
+        state.items = parsed.items || [];
+        state.meetings = parsed.meetings || [];
+      }
+      state.meetings.forEach(m => {
+        if(m.transcript===undefined) m.transcript='';
+        if(m.analysisSuggestions===undefined) m.analysisSuggestions=null;
+        if(m.analysisAdded===undefined) m.analysisAdded=[];
+      });
+      state.items.forEach(it => {
+        if(it.hidden===undefined) it.hidden=false;
+        if(it.meetingId===undefined) it.meetingId=null;
+        if(it.department===undefined){
+          it.department = isValidDept(it.category) ? it.category : 'เรื่องแจ้งเพื่อทราบ';
+          it.subDepartment = null;
+        }
+        if(it.progress===undefined){
+          it.progress = it.status==='เสร็จสิ้น' ? 100 : (it.status==='กำลังดำเนินการ' ? 50 : 0);
+        }
+      });
+    }
+  }catch(e){ state.items = []; state.meetings = []; }
+  render();
+}
+async function persist(){
+  try{
+    const ok = await storageSet(STORAGE_KEY, JSON.stringify({items: state.items, meetings: state.meetings}));
+    if(!ok) showToast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+  }catch(e){ showToast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง'); }
+}
+
+function setView(v, id){
+  state.view = v;
+  state.selectedId = id || null;
+  render();
+}
+
+/* ---------- Layout ---------- */
+function render(){
+  const navItems = [
+    {id:'dashboard', label:'ภาพรวม', n:'01'},
+    {id:'items', label:'วาระทั้งหมด', n:'02'},
+    {id:'meetings', label:'การประชุม', n:'03'},
+    {id:'new', label:'บันทึกวาระใหม่', n:'04'},
+    {id:'analysis', label:'วิเคราะห์การแก้ปัญหา', n:'05'},
+    {id:'report', label:'รายงาน', n:'06'},
+  ];
+  const activeMap = {detail:'items', meetingDetail:'meetings', meetingForm:'meetings'};
+  const activeTop = navItems.find(n=>n.id===state.view) ? state.view : (activeMap[state.view] || 'dashboard');
+
+  $app.innerHTML = `
+    <div class="sidebar">
+      <div class="brand">
+        <div class="mark">วต</div>
+        <h1>วาระติดตาม</h1>
+        <p>LEDGER · FOLLOW-UP LOG</p>
+      </div>
+      <nav>
+        ${navItems.map(n=>`
+          <div class="nav-item ${activeTop===n.id?'active':''}" data-nav="${n.id}">
+            <span class="num">${n.n}</span><span>${n.label}</span>
+          </div>`).join('')}
+      </nav>
+      <div class="sidebar-foot">วาระ: ${state.items.filter(i=>!i.hidden).length} (ซ่อน ${state.items.filter(i=>i.hidden).length})<br>การประชุม: ${state.meetings.length}<br>${storageModeLabel()}</div>
+    </div>
+    <main id="main"></main>
+  `;
+  document.querySelectorAll('.sidebar [data-nav]').forEach(el=>{
+    el.addEventListener('click', ()=> setView(el.dataset.nav));
+  });
+
+  const $main = document.getElementById('main');
+  if(state.view==='dashboard') $main.innerHTML = renderDashboard();
+  else if(state.view==='items') $main.innerHTML = renderItemsView();
+  else if(state.view==='new') $main.innerHTML = renderNewForm();
+  else if(state.view==='detail') $main.innerHTML = renderDetail(state.selectedId);
+  else if(state.view==='meetings') $main.innerHTML = renderMeetings();
+  else if(state.view==='meetingForm') $main.innerHTML = renderMeetingForm();
+  else if(state.view==='meetingDetail') $main.innerHTML = renderMeetingDetail(state.selectedId);
+  else if(state.view==='analysis') $main.innerHTML = renderAnalysis();
+  else if(state.view==='report') $main.innerHTML = renderReport();
+
+  attachViewHandlers();
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(){
+  const items = state.items.filter(i=>!i.hidden);
+  const pending = items.filter(i=>i.status==='รอดำเนินการ' && !isOverdue(i)).length;
+  const progress = items.filter(i=>i.status==='กำลังดำเนินการ' && !isOverdue(i)).length;
+  const done = items.filter(i=>i.status==='เสร็จสิ้น').length;
+  const overdue = items.filter(isOverdue).length;
+  const avgProgress = items.length ? Math.round(items.reduce((sum,i)=>sum+(i.progress||0),0)/items.length) : 0;
+
+  const upcoming = items.filter(i=>i.status!=='เสร็จสิ้น')
+    .sort((a,b)=> (a.dueDate||'9999').localeCompare(b.dueDate||'9999')).slice(0,6);
+
+  const recentLogs = [];
+  items.forEach(it => (it.logs||[]).forEach(lg => recentLogs.push({...lg, itemTitle: it.title, itemId: it.id})));
+  recentLogs.sort((a,b)=> b.date.localeCompare(a.date));
+  const latestLogs = recentLogs.slice(0,5);
+
+  return `
+    ${storageMode==='cloud-shared' ? `
+    <div class="panel" style="border-color:var(--blue); background:var(--blue-bg);">
+      <div style="font-size:13px; line-height:1.7;">
+        <b>🔗 โหมดแชร์ร่วมกัน:</b> ทุกคนที่เปิดลิงก์นี้จะเห็นและแก้ไขข้อมูลชุดเดียวกันได้ทั้งหมด — ถ้ามีคนอื่นแก้ไขพร้อมกัน การแก้ไขล่าสุดจะถูกใช้ (last write wins) หน้าเว็บจะรีเฟรชข้อมูลอัตโนมัติทุก ~15 วินาที
+      </div>
+    </div>` : storageMode==='local' ? `
+    <div class="panel" style="border-color:var(--amber); background:var(--amber-bg);">
+      <div style="font-size:13px; line-height:1.7;">
+        <b>⚠️ ตอนนี้ยังไม่ได้แชร์ร่วมกับใคร — บันทึกอยู่ในเบราว์เซอร์นี้เครื่องนี้เท่านั้น</b><br>
+        ไฟล์นี้ถูกเปิดนอกระบบ Claude (เช่น ดาวน์โหลด/โฮสต์แยกไว้ที่อื่น) ทำให้ไม่มีที่เก็บข้อมูลกลางให้คนอื่นเห็นร่วมกันได้ แต่ละคนที่เปิดจะเห็นข้อมูลของเบราว์เซอร์ตัวเองเท่านั้น<br>
+        ถ้าต้องการให้แชร์ลิงก์แล้วคนอื่นเห็น/แก้ไขร่วมกันได้จริง ต้องเปิดและแชร์ไฟล์นี้ผ่านหน้าแชทของ Claude เท่านั้น (ใช้ปุ่มแชร์ของ Claude แชร์บทสนทนา/ไฟล์นี้ ไม่ใช่ลิงก์เว็บที่โฮสต์แยก)
+      </div>
+    </div>` : storageMode==='none' ? `
+    <div class="panel" style="border-color:var(--red); background:var(--red-bg);">
+      <div style="font-size:13px; line-height:1.7;">
+        <b>⚠️ ไม่สามารถบันทึกข้อมูลได้ในขณะนี้</b><br>
+        เบราว์เซอร์นี้ปิดการใช้งานระบบจัดเก็บข้อมูล วาระที่จดจะหายไปเมื่อปิดหรือรีเฟรชหน้า
+      </div>
+    </div>` : ''}
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">ภาพรวมวาระติดตาม</h2>
+        <p class="page-sub">สรุปสถานะการติดตามงานและบันทึกประจำวัน</p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span class="date">${fmtDateThai(todayStr())}</span>
+        <button class="btn" data-nav="new">+ เพิ่มวาระใหม่</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><div class="n">${items.length}</div><div class="l">วาระทั้งหมด</div></div>
+      <div class="stat-card pending"><div class="n">${pending}</div><div class="l">รอดำเนินการ</div></div>
+      <div class="stat-card progress"><div class="n">${progress}</div><div class="l">กำลังดำเนินการ</div></div>
+      <div class="stat-card done"><div class="n">${done}</div><div class="l">เสร็จสิ้น</div></div>
+      <div class="stat-card overdue"><div class="n">${overdue}</div><div class="l">เลยกำหนด</div></div>
+      <div class="stat-card"><div class="n" style="color:${progressColor(avgProgress)};">${avgProgress}%</div><div class="l">ความคืบหน้าเฉลี่ย</div></div>
+    </div>
+
+    <div class="grid2" style="align-items:start;">
+      <div class="panel">
+        <h2>ใกล้ครบกำหนด <span class="tag">${upcoming.length} รายการ</span></h2>
+        ${upcoming.length===0 ? '<div class="empty">ไม่มีวาระที่ต้องติดตาม — เพิ่มวาระใหม่เพื่อเริ่มบันทึก</div>' :
+          upcoming.map(it=>itemRowHtml(it)).join('')}
+      </div>
+      <div class="panel">
+        <h2>บันทึกล่าสุด <span class="tag">5 รายการ</span></h2>
+        ${latestLogs.length===0 ? '<div class="empty">ยังไม่มีบันทึกการแก้ปัญหา</div>' :
+          latestLogs.map(lg=>`
+            <div class="item-row" data-open="${lg.itemId}" style="cursor:pointer; display:block;">
+              <div class="log-date mono" style="font-size:11.5px; color:var(--ink-soft); margin-bottom:3px;">${fmtDateThai(lg.date)} · ${escapeHtml(lg.itemTitle)}</div>
+              <div style="font-size:13px;">${escapeHtml(lg.problem).slice(0,90)}${lg.problem.length>90?'…':''}</div>
+            </div>
+          `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function itemRowHtml(it, opts){
+  opts = opts || {};
+  const overdue = isOverdue(it);
+  const mt = it.meetingId ? meetingById(it.meetingId) : null;
+  return `
+    <div class="item-row">
+      <div class="title" data-open="${it.id}">${escapeHtml(it.title)}<small>${escapeHtml(deptLabel(it))} · กำหนด ${fmtDateThai(it.dueDate)} · ${escapeHtml(it.owner||'ไม่ระบุผู้รับผิดชอบ')}${mt?` · จากประชุม: ${escapeHtml(mt.title)}`:''}</small></div>
+      ${it.hidden ? '<span class="hidden-tag">ซ่อนอยู่</span>' : ''}
+      ${progressBarHtml(it.progress)}
+      <span class="pri ${it.priority}">${it.priority}</span>
+      <span class="stamp ${overdue?'overdue':it.status}">${overdue?'เลยกำหนด':it.status}</span>
+      ${opts.showHideToggle ? `<button class="icon-btn" data-toggle-hide="${it.id}">${it.hidden?'เลิกซ่อน':'ซ่อน'}</button>` : ''}
+    </div>
+  `;
+}
+
+/* ---------- Items list view ---------- */
+function renderItemsView(){
+  const items = [...state.items]
+    .filter(i => state.showHidden ? true : !i.hidden)
+    .sort((a,b)=> (a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">วาระทั้งหมด</h2>
+        <p class="page-sub">รายการวาระติดตามทั้งหมดในระบบ</p>
+      </div>
+      <button class="btn" data-nav="new">+ เพิ่มวาระใหม่</button>
+    </div>
+    <div class="panel">
+      <label class="checkline" style="margin-bottom:14px;">
+        <input type="checkbox" id="showHiddenChk" ${state.showHidden?'checked':''}>
+        แสดงวาระที่ซ่อนไว้ด้วย
+      </label>
+      ${items.length===0 ? '<div class="empty">ไม่มีวาระในเงื่อนไขนี้</div>' :
+        items.map(it=>itemRowHtml(it, {showHideToggle:true})).join('')}
+    </div>
+  `;
+}
+
+/* ---------- New form ---------- */
+function renderNewForm(){
+  const preselect = state.formMeetingId || '';
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">บันทึกวาระใหม่</h2>
+        <p class="page-sub">กรอกรายละเอียดวาระที่ต้องการติดตาม</p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:640px;">
+      <form id="newItemForm">
+        <label>หัวข้อวาระ *</label>
+        <input type="text" id="f-title" required placeholder="เช่น ติดตามงบประมาณจัดซื้อไตรมาส 3">
+
+        <div class="grid2">
+          <div>
+            <label>หน่วยงาน / กลุ่มวาระ</label>
+            <select id="f-department">
+              ${DEPTS.map(d=>`<option value="${d.name}">${d.name}</option>`).join('')}
+            </select>
+          </div>
+          <div id="f-subdept-wrap" style="display:none;">
+            <label>หน่วยงานย่อย</label>
+            <select id="f-subdepartment"></select>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label>ระดับความสำคัญ</label>
+            <select id="f-priority">
+              <option value="กลาง">กลาง</option>
+              <option value="สูง">สูง</option>
+              <option value="ต่ำ">ต่ำ</option>
+            </select>
+          </div>
+          <div>
+            <label>กำหนดเสร็จ</label>
+            <input type="date" id="f-due" value="${todayStr()}">
+          </div>
+        </div>
+
+        <label>ผู้รับผิดชอบ</label>
+        <input type="text" id="f-owner" placeholder="ชื่อผู้รับผิดชอบ">
+
+        <label>ความคืบหน้าเริ่มต้น <span id="f-progress-val" class="mono">0%</span></label>
+        <input type="range" id="f-progress" min="0" max="100" step="5" value="0" style="accent-color:var(--blue);">
+
+        <label>การประชุมที่เกี่ยวข้อง (ถ้ามี)</label>
+        <select id="f-meeting">
+          <option value="">— ไม่เกี่ยวข้องกับการประชุม —</option>
+          ${state.meetings.map(m=>`<option value="${m.id}" ${m.id===preselect?'selected':''}>${escapeHtml(m.title)} (${fmtDateThai(m.date)})</option>`).join('')}
+        </select>
+
+        <label>รายละเอียด</label>
+        <textarea id="f-desc" placeholder="รายละเอียดของวาระนี้..."></textarea>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">บันทึกวาระ</button>
+          <button type="button" class="btn ghost" data-nav="items">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+/* ---------- Detail ---------- */
+function renderDetail(id){
+  const it = state.items.find(i=>i.id===id);
+  if(!it) return `<div class="panel">ไม่พบวาระนี้ <button class="btn ghost" data-nav="items">กลับ</button></div>`;
+  const overdue = isOverdue(it);
+  const logs = [...(it.logs||[])].sort((a,b)=> b.date.localeCompare(a.date));
+  const mt = it.meetingId ? meetingById(it.meetingId) : null;
+
+  return `
+    <div class="topbar">
+      <div>
+        <p class="page-sub" style="margin-bottom:6px;"><a href="#" data-nav="items" style="color:var(--ink-soft);">← วาระทั้งหมด</a></p>
+        <h2 class="page-title">${escapeHtml(it.title)}</h2>
+      </div>
+      <div style="display:flex; gap:8px;" class="no-print">
+        <button class="btn ghost" data-toggle-hide="${it.id}">${it.hidden?'เลิกซ่อนวาระนี้':'ซ่อนวาระนี้'}</button>
+        <button class="btn ghost" data-del="${it.id}">ลบวาระนี้</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="detail-head">
+        <div>
+          <span class="pri ${it.priority}">ความสำคัญ: ${it.priority}</span>
+          ${it.hidden ? '<span class="hidden-tag" style="margin-left:8px;">ซ่อนอยู่</span>' : ''}
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="stamp ${overdue?'overdue':it.status}">${overdue?'เลยกำหนด':it.status}</span>
+          <select id="statusSelect" class="no-print" style="width:auto; padding:6px 10px; font-size:12.5px;">
+            ${['รอดำเนินการ','กำลังดำเนินการ','เสร็จสิ้น'].map(s=>`<option value="${s}" ${s===it.status?'selected':''}>เปลี่ยนเป็น: ${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="meta-row">
+        <span class="meta-chip">หน่วยงาน: ${escapeHtml(deptLabel(it))}</span>
+        <span class="meta-chip">กำหนด: ${fmtDateThai(it.dueDate)}</span>
+        <span class="meta-chip">ผู้รับผิดชอบ: ${escapeHtml(it.owner||'ไม่ระบุ')}</span>
+        <span class="meta-chip">สร้างเมื่อ: ${fmtDateThai(it.createdAt)}</span>
+        ${mt ? `<span class="meta-chip" data-open-meeting="${mt.id}" style="cursor:pointer; color:var(--purple);">🎥 จากประชุม: ${escapeHtml(mt.title)}</span>` : ''}
+      </div>
+      ${it.description ? `<div class="desc">${escapeHtml(it.description)}</div>` : ''}
+    </div>
+
+    <div class="panel">
+      <h2>ความคืบหน้าความสำเร็จ</h2>
+      <div class="progress-editor">
+        <input type="range" id="progressSlider" min="0" max="100" step="5" value="${it.progress||0}" class="no-print">
+        <span class="progress-pct-big mono" id="progressBigLabel" style="color:${progressColor(it.progress||0)};">${it.progress||0}%</span>
+      </div>
+      <div class="progress-track" style="margin-top:10px; height:10px;"><div class="progress-fill" style="width:${it.progress||0}%; background:${progressColor(it.progress||0)};"></div></div>
+    </div>
+
+    <div class="panel">
+      <h2>บันทึกการแก้ปัญหาประจำวัน <span class="tag">${logs.length} รายการ</span></h2>
+      <form id="logForm" class="no-print">
+        <div class="grid3">
+          <div>
+            <label>วันที่</label>
+            <input type="date" id="lg-date" value="${todayStr()}">
+          </div>
+          <div style="grid-column: span 2;">
+            <label>ปัญหาที่พบ</label>
+            <input type="text" id="lg-problem" placeholder="เช่น เอกสารอนุมัติล่าช้าจากแผนกจัดซื้อ">
+          </div>
+        </div>
+        <label>วิธีการแก้ปัญหา / แนวทางดำเนินการ</label>
+        <textarea id="lg-solution" placeholder="อธิบายวิธีที่ใช้แก้ปัญหาหรือขั้นตอนที่ดำเนินการ..."></textarea>
+        <label>ผลลัพธ์ (ถ้ามี)</label>
+        <input type="text" id="lg-outcome" placeholder="เช่น ได้รับอนุมัติภายในวันถัดไป">
+        <div class="form-actions">
+          <button type="submit" class="btn small">เพิ่มบันทึก</button>
+        </div>
+      </form>
+
+      <div style="margin-top:18px;">
+        ${logs.length===0 ? '<div class="empty">ยังไม่มีบันทึกสำหรับวาระนี้</div>' :
+          logs.map(lg=>`
+            <div class="log-entry">
+              <div class="log-date">${fmtDateThai(lg.date)}</div>
+              <div class="log-field"><b>ปัญหาที่พบ</b>${escapeHtml(lg.problem)||'-'}</div>
+              <div class="log-field"><b>วิธีแก้ปัญหา</b>${escapeHtml(lg.solution)||'-'}</div>
+              ${lg.outcome ? `<div class="log-field"><b>ผลลัพธ์</b>${escapeHtml(lg.outcome)}</div>` : ''}
+            </div>
+          `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Meetings ---------- */
+function renderMeetings(){
+  const meetings = [...state.meetings].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">การประชุม</h2>
+        <p class="page-sub">เก็บลิงก์วิดีโอประชุม พร้อมวาระติดตามของแต่ละครั้ง</p>
+      </div>
+      <button class="btn" data-nav="meetingForm">+ เพิ่มการประชุม</button>
+    </div>
+    <div class="panel">
+      ${meetings.length===0 ? '<div class="empty">ยังไม่มีการประชุมที่บันทึกไว้</div>' :
+        meetings.map(m=>{
+          const count = state.items.filter(i=>i.meetingId===m.id).length;
+          return `
+            <div class="meeting-card" data-open-meeting="${m.id}">
+              <div>
+                <div class="mt">${escapeHtml(m.title)}</div>
+                <div class="ms">${fmtDateThai(m.date)} · วาระที่เชื่อมโยง ${count} รายการ</div>
+              </div>
+              ${m.videoUrl ? `<span class="video-badge">🎥 วิดีโอ</span>` : ''}
+            </div>
+          `;
+        }).join('')}
+    </div>
+  `;
+}
+
+function renderMeetingForm(){
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">เพิ่มการประชุม</h2>
+        <p class="page-sub">บันทึกลิงก์วิดีโอและรายละเอียดการประชุม</p>
+      </div>
+    </div>
+    <div class="panel" style="max-width:640px;">
+      <form id="newMeetingForm">
+        <label>ชื่อการประชุม *</label>
+        <input type="text" id="m-title" required placeholder="เช่น ประชุมทีมงานประจำสัปดาห์ 34/2569">
+
+        <div class="grid2">
+          <div>
+            <label>วันที่ประชุม</label>
+            <input type="date" id="m-date" value="${todayStr()}">
+          </div>
+          <div>
+            <label>ลิงก์วิดีโอประชุม</label>
+            <input type="url" id="m-video" placeholder="https://...">
+          </div>
+        </div>
+
+        <label>บันทึกย่อ (ถ้ามี)</label>
+        <textarea id="m-notes" placeholder="สรุปสั้นๆ เกี่ยวกับการประชุมนี้..."></textarea>
+
+        <div class="form-actions">
+          <button type="submit" class="btn">บันทึกการประชุม</button>
+          <button type="button" class="btn ghost" data-nav="meetings">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+function renderMeetingDetail(id){
+  const m = meetingById(id);
+  if(!m) return `<div class="panel">ไม่พบการประชุมนี้ <button class="btn ghost" data-nav="meetings">กลับ</button></div>`;
+  const linkedItems = state.items.filter(i=>i.meetingId===m.id);
+  const loading = !!analyzingMeetings[m.id];
+  const suggestions = m.analysisSuggestions;
+  const added = m.analysisAdded || [];
+
+  return `
+    <div class="topbar">
+      <div>
+        <p class="page-sub" style="margin-bottom:6px;"><a href="#" data-nav="meetings" style="color:var(--ink-soft);">← การประชุมทั้งหมด</a></p>
+        <h2 class="page-title">${escapeHtml(m.title)}</h2>
+      </div>
+      <button class="btn ghost no-print" data-del-meeting="${m.id}">ลบการประชุมนี้</button>
+    </div>
+
+    <div class="panel">
+      <div class="meta-row" style="margin-top:0;">
+        <span class="meta-chip">วันที่: ${fmtDateThai(m.date)}</span>
+        ${m.videoUrl ? `<a class="video-badge" href="${escapeHtml(m.videoUrl)}" target="_blank" rel="noopener">🎥 เปิดวิดีโอประชุม</a>` : '<span class="meta-chip">ไม่มีลิงก์วิดีโอ</span>'}
+      </div>
+      ${m.notes ? `<div class="desc">${escapeHtml(m.notes)}</div>` : ''}
+    </div>
+
+    <div class="panel">
+      <h2>วิเคราะห์วาระที่ต้องติดตามจากการประชุมนี้ <span class="tag">AI</span></h2>
+      <p class="page-sub" style="margin-bottom:12px;">ลิงก์วิดีโอเปิดดูได้แต่ไม่สามารถอ่านเนื้อหาในวิดีโอได้โดยตรง — วางทรานสคริปต์ หรือสรุป/บันทึกย่อของการประชุมด้านล่าง ระบบจะบันทึกข้อความนี้ไว้ให้อัตโนมัติ และช่วยสกัดรายการที่ควรติดตามให้เมื่อกดวิเคราะห์</p>
+      <textarea id="transcriptInput" class="mono-area" placeholder="วางทรานสคริปต์ หรือสรุปเนื้อหาการประชุมที่นี่...">${escapeHtml(m.transcript)}</textarea>
+      <div class="form-actions">
+        <button class="btn purple no-print" id="analyzeBtn" ${loading?'disabled':''}>
+          ${loading ? '<span class="spinner"></span>กำลังวิเคราะห์...' : '✦ วิเคราะห์วาระที่ต้องติดตาม'}
+        </button>
+        <span class="page-sub no-print" id="transcriptSavedNote" style="align-self:center;"></span>
+      </div>
+
+      ${suggestions ? `
+        <div style="margin-top:18px;">
+          ${suggestions.length===0 ? '<div class="empty">ไม่พบวาระที่ต้องติดตามในเนื้อหาที่ให้มา</div>' :
+            suggestions.map((s,idx)=>{
+              const isAdded = added.includes(idx);
+              return `
+                <div class="suggestion-card">
+                  <div class="sh">
+                    <div class="st">${escapeHtml(s.title)}</div>
+                    <button class="btn small ${isAdded?'ghost':'purple'}" data-add-suggestion="${idx}" ${isAdded?'disabled':''}>${isAdded?'เพิ่มแล้ว ✓':'+ เพิ่มเป็นวาระ'}</button>
+                  </div>
+                  <div class="suggestion-meta">
+                    <span class="pri ${s.priority}">${s.priority}</span>
+                    <span class="meta-chip">${escapeHtml(s.subDepartment ? `${s.department} - ${s.subDepartment}` : s.department)}</span>
+                  </div>
+                  ${s.reason ? `<div class="sr">${escapeHtml(s.reason)}</div>` : ''}
+                </div>
+              `;
+            }).join('')}
+        </div>
+      ` : ''}
+    </div>
+
+    <div class="panel">
+      <h2>วาระติดตามของการประชุมนี้ <span class="tag">${linkedItems.length} รายการ</span></h2>
+      <button class="btn small ghost no-print" style="margin-bottom:12px;" data-new-for-meeting="${m.id}">+ เพิ่มวาระด้วยตนเอง</button>
+      ${linkedItems.length===0 ? '<div class="empty">ยังไม่มีวาระติดตามที่เชื่อมโยงกับการประชุมนี้</div>' :
+        linkedItems.map(it=>itemRowHtml(it)).join('')}
+    </div>
+  `;
+}
+
+/* ---------- Analysis (problem-solving) ---------- */
+function renderAnalysis(){
+  const allLogs = [];
+  state.items.filter(i=>!i.hidden).forEach(it => (it.logs||[]).forEach(lg => allLogs.push({...lg, category: deptLabel(it), itemTitle: it.title})));
+
+  const byDate = {};
+  allLogs.forEach(lg => { byDate[lg.date] = (byDate[lg.date]||[]); byDate[lg.date].push(lg); });
+  const dates = Object.keys(byDate).sort((a,b)=> b.localeCompare(a));
+
+  const byCat = {};
+  allLogs.forEach(lg => { byCat[lg.category] = (byCat[lg.category]||0)+1; });
+  const maxCat = Math.max(1, ...Object.values(byCat));
+  const catEntries = Object.entries(byCat).sort((a,b)=> b[1]-a[1]);
+
+  const topCat = catEntries[0];
+  const avgPerDay = dates.length ? (allLogs.length/dates.length).toFixed(1) : 0;
+
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">วิเคราะห์การแก้ปัญหา</h2>
+        <p class="page-sub">สรุปแนวทางการแก้ปัญหาที่บันทึกไว้ในแต่ละวัน</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>ข้อสังเกต</h2>
+      <div class="insight-box">
+        ${allLogs.length===0 ? 'ยังไม่มีข้อมูลบันทึกเพียงพอสำหรับวิเคราะห์ — เริ่มเพิ่มบันทึกในหน้ารายละเอียดวาระ' : `
+          บันทึกทั้งหมด <b>${allLogs.length} รายการ</b> ใน <b>${dates.length} วัน</b>
+          (เฉลี่ย ${avgPerDay} รายการ/วัน)${topCat ? ` · ปัญหาที่พบบ่อยที่สุดอยู่ในหมวด <b>${escapeHtml(topCat[0])}</b> (${topCat[1]} ครั้ง)` : ''}
+        `}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>ความถี่ปัญหาตามหมวดหมู่</h2>
+      ${catEntries.length===0 ? '<div class="empty">ไม่มีข้อมูล</div>' :
+        catEntries.map(([cat,count])=>`
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(cat)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${(count/maxCat*100).toFixed(0)}%"></div></div>
+            <div class="bar-count">${count}</div>
+          </div>
+        `).join('')}
+    </div>
+
+    <div class="panel">
+      <h2>บันทึกรายวัน</h2>
+      ${dates.length===0 ? '<div class="empty">ยังไม่มีบันทึก</div>' :
+        dates.map(d=>`
+          <div style="margin-bottom:18px;">
+            <div class="mono" style="font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:6px;">${fmtDateThai(d)} · ${byDate[d].length} บันทึก</div>
+            ${byDate[d].map(lg=>`
+              <div class="log-entry">
+                <div class="log-field"><b>วาระ</b>${escapeHtml(lg.itemTitle)} <span style="color:var(--ink-faint);">(${escapeHtml(lg.category)})</span></div>
+                <div class="log-field"><b>ปัญหาที่พบ</b>${escapeHtml(lg.problem)||'-'}</div>
+                <div class="log-field"><b>วิธีแก้ปัญหา</b>${escapeHtml(lg.solution)||'-'}</div>
+                ${lg.outcome ? `<div class="log-field"><b>ผลลัพธ์</b>${escapeHtml(lg.outcome)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+    </div>
+  `;
+}
+
+/* ---------- Report ---------- */
+function renderReport(){
+  return `
+    <div class="topbar">
+      <div>
+        <h2 class="page-title">รายงานสรุป</h2>
+        <p class="page-sub">กรองและพิมพ์รายงานวาระติดตาม</p>
+      </div>
+      <button class="btn ghost no-print" onclick="window.print()">พิมพ์ / บันทึก PDF</button>
+    </div>
+
+    <div class="panel no-print">
+      <div class="filters">
+        <div class="f">
+          <label>สถานะ</label>
+          <select id="rf-status">
+            <option value="">ทั้งหมด</option>
+            <option value="รอดำเนินการ">รอดำเนินการ</option>
+            <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+            <option value="overdue">เลยกำหนด</option>
+          </select>
+        </div>
+        <div class="f">
+          <label>หน่วยงาน</label>
+          <select id="rf-department">
+            <option value="">ทั้งหมด</option>
+            ${DEPTS.map(d=>`<option value="${d.name}">${d.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="f" id="rf-subdept-wrap" style="display:none;">
+          <label>หน่วยงานย่อย</label>
+          <select id="rf-subdepartment"><option value="">ทั้งหมด</option></select>
+        </div>
+        <div class="f">
+          <label>การประชุม</label>
+          <select id="rf-meeting">
+            <option value="">ทั้งหมด</option>
+            ${state.meetings.map(m=>`<option value="${m.id}">${escapeHtml(m.title)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="f">
+          <label>ตั้งแต่วันที่</label>
+          <input type="date" id="rf-from">
+        </div>
+        <div class="f">
+          <label>ถึงวันที่</label>
+          <input type="date" id="rf-to">
+        </div>
+        <div class="f">
+          <label class="checkline"><input type="checkbox" id="rf-hidden"> รวมวาระที่ซ่อนไว้</label>
+        </div>
+        <div class="f">
+          <button class="btn small" id="rf-apply">กรองข้อมูล</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="serif" style="margin-bottom:2px;">รายงานวาระติดตาม</h2>
+      <p class="page-sub" style="margin-bottom:14px;">พิมพ์เมื่อ ${fmtDateThai(todayStr())}</p>
+      <div id="reportTableWrap"></div>
+    </div>
+  `;
+}
+
+function buildReportTable(){
+  const status = document.getElementById('rf-status')?.value || '';
+  const department = document.getElementById('rf-department')?.value || '';
+  const subDepartment = document.getElementById('rf-subdepartment')?.value || '';
+  const meetingId = document.getElementById('rf-meeting')?.value || '';
+  const from = document.getElementById('rf-from')?.value || '';
+  const to = document.getElementById('rf-to')?.value || '';
+  const includeHidden = document.getElementById('rf-hidden')?.checked || false;
+
+  let items = [...state.items];
+  if(!includeHidden) items = items.filter(it=>!it.hidden);
+  if(status) items = items.filter(it => status==='overdue' ? isOverdue(it) : it.status===status);
+  if(department) items = items.filter(it => it.department===department);
+  if(subDepartment) items = items.filter(it => it.subDepartment===subDepartment);
+  if(meetingId) items = items.filter(it => it.meetingId===meetingId);
+  if(from) items = items.filter(it => (it.dueDate||'') >= from);
+  if(to) items = items.filter(it => (it.dueDate||'') <= to);
+  items.sort((a,b)=> (a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+
+  const wrap = document.getElementById('reportTableWrap');
+  if(!wrap) return;
+  if(items.length===0){ wrap.innerHTML = '<div class="empty">ไม่พบรายการตามเงื่อนไขที่กรอง</div>'; return; }
+
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>วาระ</th><th>หน่วยงาน</th><th>การประชุม</th><th>ผู้รับผิดชอบ</th><th>กำหนด</th><th>ความคืบหน้า</th><th>สถานะ</th><th>บันทึก</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(it=>{
+          const mt = it.meetingId ? meetingById(it.meetingId) : null;
+          return `
+          <tr>
+            <td><b>${escapeHtml(it.title)}</b>${it.description ? `<div style="color:var(--ink-soft); font-size:12px; margin-top:3px;">${escapeHtml(it.description).slice(0,90)}${it.description.length>90?'…':''}</div>`:''}</td>
+            <td>${escapeHtml(deptLabel(it))}</td>
+            <td>${mt ? escapeHtml(mt.title) : '-'}</td>
+            <td>${escapeHtml(it.owner||'-')}</td>
+            <td class="mono">${fmtDateThai(it.dueDate)}</td>
+            <td>${progressBarHtml(it.progress)}</td>
+            <td>${isOverdue(it) ? 'เลยกำหนด' : it.status}${it.hidden?' (ซ่อน)':''}</td>
+            <td>${(it.logs||[]).length} รายการ</td>
+          </tr>
+        `;}).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* ---------- Meeting transcript analysis via Claude ---------- */
+async function analyzeMeetingTranscript(meetingId){
+  const transcript = document.getElementById('transcriptInput')?.value.trim();
+  if(!transcript){ showToast('กรุณาวางทรานสคริปต์หรือสรุปเนื้อหาการประชุมก่อน'); return; }
+
+  const m = meetingById(meetingId);
+  if(!m) return;
+  m.transcript = transcript;
+  await persist();
+
+  analyzingMeetings[meetingId] = true;
+  render();
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: `คุณเป็นผู้ช่วยวิเคราะห์บันทึกการประชุมภาษาไทยของโรงงานอุตสาหกรรมเยื่อและกระดาษ จากทรานสคริปต์หรือสรุปเนื้อหาการประชุมที่ได้รับ ให้สกัดรายการ "วาระที่ต้องติดตาม" (action items / follow-ups) ที่ชัดเจนออกมา แล้วจัดหมวดตามหน่วยงานที่รับผิดชอบ
+ตอบกลับเป็น JSON array เท่านั้น ห้ามมีข้อความอื่น ห้ามมี markdown code fence
+รูปแบบแต่ละรายการ: {"title": string สั้นกระชับไม่เกิน 12 คำ, "department": string, "subDepartment": string หรือ null, "priority": "สูง" หรือ "กลาง" หรือ "ต่ำ", "reason": string อธิบายสั้นๆ ว่าทำไมต้องติดตามเรื่องนี้}
+ต้องเลือก department จากรายการนี้เท่านั้น และถ้ามี subDepartment ต้องเลือกจากตัวเลือกย่อยที่กำหนดของ department นั้นเท่านั้น มิฉะนั้นให้ subDepartment เป็น null:
+${DEPTS.map(d=> d.subs.length ? `- "${d.name}" (ต้องระบุ subDepartment เป็นหนึ่งใน: ${d.subs.join(', ')})` : `- "${d.name}" (subDepartment เป็น null)`).join('\n')}
+ถ้าไม่พบวาระที่ต้องติดตามให้ตอบ []`,
+        messages: [{ role: "user", content: transcript.slice(0, 20000) }]
+      })
+    });
+    const data = await response.json();
+    const textBlock = (data.content || []).map(b=>b.text||'').join('\n');
+    const clean = textBlock.replace(/```json|```/g,'').trim();
+    let suggestions = JSON.parse(clean);
+    if(!Array.isArray(suggestions)) suggestions = [];
+    suggestions = suggestions.map(s=>{
+      const dept = isValidDept(s.department) ? s.department : 'เรื่องแจ้งเพื่อทราบ';
+      const validSubs = getDeptSubs(dept);
+      const sub = validSubs.includes(s.subDepartment) ? s.subDepartment : null;
+      return {
+        title: s.title || 'ไม่ระบุหัวข้อ',
+        department: dept,
+        subDepartment: sub,
+        priority: ['สูง','กลาง','ต่ำ'].includes(s.priority) ? s.priority : 'กลาง',
+        reason: s.reason || ''
+      };
+    });
+    m.analysisSuggestions = suggestions;
+    m.analysisAdded = [];
+    await persist();
+  }catch(e){
+    showToast('วิเคราะห์ไม่สำเร็จ ลองใหม่อีกครั้ง');
+  }
+  delete analyzingMeetings[meetingId];
+  render();
+}
+
+/* ---------- Handlers ---------- */
+function attachViewHandlers(){
+  document.querySelectorAll('[data-open]').forEach(el=>{
+    el.addEventListener('click', ()=> setView('detail', el.dataset.open));
+  });
+  document.querySelectorAll('[data-open-meeting]').forEach(el=>{
+    el.addEventListener('click', ()=> setView('meetingDetail', el.dataset.openMeeting));
+  });
+  document.querySelectorAll('main [data-nav]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.preventDefault(); state.formMeetingId=null; setView(el.dataset.nav); });
+  });
+  document.querySelectorAll('[data-new-for-meeting]').forEach(el=>{
+    el.addEventListener('click', ()=>{ state.formMeetingId = el.dataset.newForMeeting; setView('new'); });
+  });
+
+  const deptSelect = document.getElementById('f-department');
+  if(deptSelect){
+    const syncSubDept = ()=>{
+      const subs = getDeptSubs(deptSelect.value);
+      const wrap = document.getElementById('f-subdept-wrap');
+      const subSelect = document.getElementById('f-subdepartment');
+      if(subs.length===0){ wrap.style.display='none'; subSelect.innerHTML=''; }
+      else{ wrap.style.display=''; subSelect.innerHTML = subs.map(s=>`<option value="${s}">${s}</option>`).join(''); }
+    };
+    deptSelect.addEventListener('change', syncSubDept);
+    syncSubDept();
+  }
+
+  const progressInput = document.getElementById('f-progress');
+  if(progressInput){
+    const valLabel = document.getElementById('f-progress-val');
+    progressInput.addEventListener('input', ()=>{ valLabel.textContent = progressInput.value + '%'; });
+  }
+
+  const newForm = document.getElementById('newItemForm');
+  if(newForm){
+    newForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const title = document.getElementById('f-title').value.trim();
+      if(!title){ showToast('กรุณากรอกหัวข้อวาระ'); return; }
+      const meetingId = document.getElementById('f-meeting').value || null;
+      const department = document.getElementById('f-department').value;
+      const subs = getDeptSubs(department);
+      const subDepartment = subs.length>0 ? (document.getElementById('f-subdepartment').value || null) : null;
+      const progress = parseInt(document.getElementById('f-progress').value, 10) || 0;
+      const item = {
+        id: uid(),
+        title,
+        department,
+        subDepartment,
+        priority: document.getElementById('f-priority').value,
+        status: progress>=100 ? 'เสร็จสิ้น' : 'รอดำเนินการ',
+        progress,
+        dueDate: document.getElementById('f-due').value,
+        owner: document.getElementById('f-owner').value.trim(),
+        description: document.getElementById('f-desc').value.trim(),
+        createdAt: todayStr(),
+        meetingId,
+        hidden: false,
+        logs: []
+      };
+      state.items.push(item);
+      await persist();
+      showToast('บันทึกวาระใหม่แล้ว');
+      state.formMeetingId = null;
+      setView('detail', item.id);
+    });
+  }
+
+  const newMeetingForm = document.getElementById('newMeetingForm');
+  if(newMeetingForm){
+    newMeetingForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const title = document.getElementById('m-title').value.trim();
+      if(!title){ showToast('กรุณากรอกชื่อการประชุม'); return; }
+      const meeting = {
+        id: uid(),
+        title,
+        date: document.getElementById('m-date').value || todayStr(),
+        videoUrl: document.getElementById('m-video').value.trim(),
+        notes: document.getElementById('m-notes').value.trim(),
+        createdAt: todayStr(),
+        transcript: '',
+        analysisSuggestions: null,
+        analysisAdded: []
+      };
+      state.meetings.push(meeting);
+      await persist();
+      showToast('บันทึกการประชุมแล้ว');
+      setView('meetingDetail', meeting.id);
+    });
+  }
+
+  const statusSelect = document.getElementById('statusSelect');
+  if(statusSelect){
+    statusSelect.addEventListener('change', async ()=>{
+      const it = state.items.find(i=>i.id===state.selectedId);
+      if(it){
+        it.status = statusSelect.value;
+        if(it.status==='เสร็จสิ้น') it.progress = 100;
+        await persist(); showToast('อัปเดตสถานะแล้ว'); render();
+      }
+    });
+  }
+
+  const progressSlider = document.getElementById('progressSlider');
+  if(progressSlider){
+    const bigLabel = document.getElementById('progressBigLabel');
+    progressSlider.addEventListener('input', ()=>{
+      const p = parseInt(progressSlider.value,10);
+      bigLabel.textContent = p + '%';
+      bigLabel.style.color = progressColor(p);
+    });
+    progressSlider.addEventListener('change', async ()=>{
+      const it = state.items.find(i=>i.id===state.selectedId);
+      if(!it) return;
+      const p = parseInt(progressSlider.value,10);
+      it.progress = p;
+      if(p>=100) it.status = 'เสร็จสิ้น';
+      else if(it.status==='เสร็จสิ้น' && p<100) it.status = 'กำลังดำเนินการ';
+      await persist();
+      showToast('อัปเดตความคืบหน้าแล้ว');
+      render();
+    });
+  }
+
+  const logForm = document.getElementById('logForm');
+  if(logForm){
+    logForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const it = state.items.find(i=>i.id===state.selectedId);
+      if(!it) return;
+      const problem = document.getElementById('lg-problem').value.trim();
+      const solution = document.getElementById('lg-solution').value.trim();
+      if(!problem && !solution){ showToast('กรุณากรอกปัญหาหรือวิธีแก้ปัญหา'); return; }
+      it.logs = it.logs || [];
+      it.logs.push({
+        id: uid(),
+        date: document.getElementById('lg-date').value || todayStr(),
+        problem,
+        solution,
+        outcome: document.getElementById('lg-outcome').value.trim()
+      });
+      await persist();
+      showToast('เพิ่มบันทึกแล้ว');
+      render();
+    });
+  }
+
+  document.querySelectorAll('[data-del]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('ต้องการลบวาระนี้และบันทึกทั้งหมดใช่หรือไม่?')) return;
+      state.items = state.items.filter(i=>i.id!==el.dataset.del);
+      await persist();
+      showToast('ลบวาระแล้ว');
+      setView('items');
+    });
+  });
+
+  document.querySelectorAll('[data-del-meeting]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      if(!confirm('ต้องการลบการประชุมนี้ใช่หรือไม่? วาระที่เชื่อมโยงจะยังคงอยู่แต่จะไม่เชื่อมกับการประชุมนี้อีก')) return;
+      const mid = el.dataset.delMeeting;
+      state.meetings = state.meetings.filter(m=>m.id!==mid);
+      state.items.forEach(it=>{ if(it.meetingId===mid) it.meetingId=null; });
+      delete analyzingMeetings[mid];
+      await persist();
+      showToast('ลบการประชุมแล้ว');
+      setView('meetings');
+    });
+  });
+
+  document.querySelectorAll('[data-toggle-hide]').forEach(el=>{
+    el.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const it = state.items.find(i=>i.id===el.dataset.toggleHide);
+      if(it){ it.hidden = !it.hidden; await persist(); showToast(it.hidden?'ซ่อนวาระแล้ว':'เลิกซ่อนวาระแล้ว'); render(); }
+    });
+  });
+
+  const showHiddenChk = document.getElementById('showHiddenChk');
+  if(showHiddenChk){
+    showHiddenChk.addEventListener('change', ()=>{ state.showHidden = showHiddenChk.checked; render(); });
+  }
+
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  if(analyzeBtn){
+    analyzeBtn.addEventListener('click', ()=> analyzeMeetingTranscript(state.selectedId));
+  }
+  const transcriptInput = document.getElementById('transcriptInput');
+  if(transcriptInput){
+    transcriptInput.addEventListener('blur', async ()=>{
+      const m = meetingById(state.selectedId);
+      if(!m) return;
+      const val = transcriptInput.value.trim();
+      if(m.transcript !== val){
+        m.transcript = val;
+        await persist();
+        const note = document.getElementById('transcriptSavedNote');
+        if(note){ note.textContent = 'บันทึกข้อความไว้แล้ว'; setTimeout(()=>{ if(note) note.textContent=''; }, 2000); }
+      }
+    });
+  }
+  document.querySelectorAll('[data-add-suggestion]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const idx = parseInt(el.dataset.addSuggestion,10);
+      const m = meetingById(state.selectedId);
+      if(!m || !m.analysisSuggestions || !m.analysisSuggestions[idx]) return;
+      const s = m.analysisSuggestions[idx];
+      const item = {
+        id: uid(),
+        title: s.title,
+        department: s.department,
+        subDepartment: s.subDepartment || null,
+        priority: s.priority,
+        status: 'รอดำเนินการ',
+        progress: 0,
+        dueDate: todayStr(),
+        owner: '',
+        description: s.reason || '',
+        createdAt: todayStr(),
+        meetingId: state.selectedId,
+        hidden: false,
+        logs: []
+      };
+      state.items.push(item);
+      m.analysisAdded = m.analysisAdded || [];
+      m.analysisAdded.push(idx);
+      await persist();
+      showToast('เพิ่มวาระจากการวิเคราะห์แล้ว');
+      render();
+    });
+  });
+
+  const rfDept = document.getElementById('rf-department');
+  if(rfDept){
+    const syncRfSubDept = ()=>{
+      const subs = getDeptSubs(rfDept.value);
+      const wrap = document.getElementById('rf-subdept-wrap');
+      const subSelect = document.getElementById('rf-subdepartment');
+      if(subs.length===0){ wrap.style.display='none'; subSelect.innerHTML='<option value="">ทั้งหมด</option>'; }
+      else{ wrap.style.display=''; subSelect.innerHTML = '<option value="">ทั้งหมด</option>' + subs.map(s=>`<option value="${s}">${s}</option>`).join(''); }
+    };
+    rfDept.addEventListener('change', syncRfSubDept);
+    syncRfSubDept();
+  }
+
+  const rfApply = document.getElementById('rf-apply');
+  if(rfApply){ rfApply.addEventListener('click', buildReportTable); }
+  if(document.getElementById('reportTableWrap')){ buildReportTable(); }
+}
+
+load();
+
+// Auto-refresh so edits from other people sharing this link show up without a manual reload.
+setInterval(async ()=>{
+  const active = document.activeElement;
+  const isEditing = active && ['INPUT','TEXTAREA','SELECT'].includes(active.tagName);
+  if(isEditing) return; // don't yank the page out from under someone mid-edit
+  await load();
+}, 15000);
+</script>
+</body>
+</html>
